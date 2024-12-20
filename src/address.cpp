@@ -2,7 +2,6 @@
 #include "address.h"
 #include <cstring>
 #include <Ed25519.h>
-#include "esp_log.h"
 
 const char *const ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 const int ALPHABET_MAP[128] = {
@@ -132,7 +131,6 @@ RobonomicsPublicKey getPublicKeyFromAddr(const char *addrStr) {
         blake2(blake2bHashed, 64, ssPrefixed, PUBLIC_KEY_LENGTH + 8, NULL, 0);
         if (bs58decoded[1 + PUBLIC_KEY_LENGTH] != blake2bHashed[0] || 
             bs58decoded[2 + PUBLIC_KEY_LENGTH] != blake2bHashed[1] ) {
-            ESP_LOGE("getPublicKeyFromAddr", "Address checksum is wrong.");
         }
 
         memcpy(pubk.bytes, bs58decoded + 1, PUBLIC_KEY_LENGTH);

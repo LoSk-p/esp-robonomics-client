@@ -1,7 +1,7 @@
 #include "Robonomics.h"
-#include "esp_log.h"
 #include <inttypes.h>
 #include "address.h"
+#include <Arduino.h>
 
 static const char *TAG = "ROBONOMICS";
 
@@ -11,6 +11,12 @@ void Robonomics::setup(String host) {
 
 void Robonomics::disconnectWebsocket() {
     blockchainUtils.disconnect();
+}
+
+void Robonomics::generateAndSetPrivateKey() {
+    uint8_t robonomicsPrivateKey[32];
+    Ed25519::generatePrivateKey(robonomicsPrivateKey);
+    setPrivateKey(robonomicsPrivateKey);
 }
 
 void Robonomics::setPrivateKey(uint8_t *privateKey) {
@@ -26,8 +32,21 @@ void Robonomics::setPrivateKey(uint8_t *privateKey) {
     }
 }
 
+void Robonomics::setPrivateKey(const char* hexPrivateKey) {
+    uint8_t privateKey[KEYS_SIZE];
+    hex2bytes(hexPrivateKey, privateKey);
+    setPrivateKey(privateKey);
+}
+
+const char* Robonomics::getPrivateKey() const {
+    static char hexString[KEYS_SIZE * 2 + 1];
+    size_t length = sizeof(privateKey_) / sizeof(privateKey_[0]);
+    bytes2hex(privateKey_, length, hexString);
+    return hexString;
+}
+
 const char* Robonomics::getSs58Address() const {
-        return ss58Address;
+    return ss58Address;
 }
 
 const char* Robonomics::sendCustomCall() {
@@ -67,7 +86,7 @@ const char* Robonomics::createAndSendExtrinsic(Data call) {
     JSONVar runtimeInfo = getRuntimeInfo(& blockchainUtils);
     uint32_t payloadSpecVersion = getSpecVersion(& runtimeInfo);
     uint32_t payloadTransactionVersion = getTransactionVersion(& runtimeInfo);
-    Serial.printf("Spec version: %" PRIu32 ", tx version: %" PRIu32 ", nonce: %llu, era: %" PRIu32 ", tip: %llu\r\n", payloadSpecVersion, payloadTransactionVersion, (unsigned long long)payloadNonce, payloadEra, (unsigned long long)payloadTip);
+    // Serial.printf("Spec version: %" PRIu32 ", tx version: %" PRIu32 ", nonce: %llu, era: %" PRIu32 ", tip: %llu\r\n", payloadSpecVersion, payloadTransactionVersion, (unsigned long long)payloadNonce, payloadEra, (unsigned long long)payloadTip);
     Data data_ = createPayload(call, payloadEra, payloadNonce, payloadTip, payloadSpecVersion, payloadTransactionVersion, payloadBlockHash, payloadBlockHash);
     Data signature_ = createSignature(data_, privateKey_, publicKey_);
     std::vector<std::uint8_t> pubKey( reinterpret_cast<std::uint8_t*>(std::begin(publicKey_)), reinterpret_cast<std::uint8_t*>(std::end(publicKey_)));

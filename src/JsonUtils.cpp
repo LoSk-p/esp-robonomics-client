@@ -1,25 +1,7 @@
 #include "JsonUtils.h"
-#include "esp_log.h"
 #include <inttypes.h> 
+#include <Arduino.h>
 
-// typedef struct {
-//    std::string ghash;      // genesis hash
-//    std::string bhash;      // block_hash
-//    uint32_t version = 0;   // transaction version 
-//    uint64_t nonce;
-//    uint64_t tip;           // uint256_t tip;    // balances::TakeFees   
-//    uint32_t specVersion;   // Runtime spec version 
-//    uint32_t tx_version;
-//    uint32_t era;
-// } FromJson;
-
-
-//  -- genesis_hash, nonce, spec_version, tip, era, tx_version
-//  ["0x631ccc82a078481584041656af292834e1ae6daab61d2875b4dd0c14bb9b17bc",0,16,0,"Immortal",1]
-//  -- nonce, spec_version, tip, era, tx_version
-// ["0x00","0x01000000","0x00","0x0000000000000000","0x0100000000000000"]
-
-static const char *TAG = "ROBONOMICS";
 
 FromJson parseJson (JSONVar val) {
    // Serial.println(val);
@@ -50,13 +32,13 @@ FromJson parseJson (JSONVar val) {
    fj.bhash = "";
 
 // #ifdef DEBUG_PRINT
-   ESP_LOGI(TAG, "nonce encoded & swapped: 0x%llx", (unsigned long long)fj.nonce); // For uint64_t
-   ESP_LOGI(TAG, "specVersion: %" PRIu32, fj.specVersion); // For uint32_t
-   ESP_LOGI(TAG, "tip: %llu", (unsigned long long)fj.tip); // For uint64_t
-   ESP_LOGI(TAG, "era: %" PRIu32, fj.era); // For uint32_t
-   ESP_LOGI(TAG, "tx_version: %" PRIu32, fj.tx_version); // For uint32_t
-   ESP_LOGI(TAG, "genesis hash: %s", fj.ghash.c_str()); // For std::string
-   ESP_LOGI(TAG, "block hash: %s", fj.bhash.c_str()); // For std::string
+   Serial.printf("nonce encoded & swapped: 0x%llx", (unsigned long long)fj.nonce); // For uint64_t
+   Serial.printf("specVersion: %" PRIu32, fj.specVersion); // For uint32_t
+   Serial.printf("tip: %llu", (unsigned long long)fj.tip); // For uint64_t
+   Serial.printf("era: %" PRIu32, fj.era); // For uint32_t
+   Serial.printf("tx_version: %" PRIu32, fj.tx_version); // For uint32_t
+   Serial.printf("genesis hash: %s", fj.ghash.c_str()); // For std::string
+   Serial.printf("block hash: %s", fj.bhash.c_str()); // For std::string
 // #endif
 
    return fj;

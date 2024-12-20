@@ -1,3 +1,4 @@
+#include <Arduino.h>
 #include "PayloadParamsUtils.h"
 #include <string>
 
@@ -76,7 +77,7 @@ const char* getChainHead(BlockchainUtils *blockchainUtils) {
     const char* chain_head = (const char *) (response["result"]);
     Serial.print("Chain head: ");
     Serial.println(chain_head);
-    return chain_head;
+    return strdup(chain_head);
 }
 
 // Get Parent Block Hash
@@ -88,5 +89,5 @@ const char* getParentBlockHash(const char* chainHead, BlockchainUtils *blockchai
     const char* parent_block_hash = (const char *) (response["result"]["parentHash"]);
     Serial.print("Chain header: ");
     Serial.println(parent_block_hash);
-    return parent_block_hash;
+    return strdup(parent_block_hash);
 }

@@ -2,8 +2,14 @@
 
 #ifdef ROBONOMICS_USE_HTTP
 
+#include <Arduino.h>
 #include "HTTPRequests.h"
+#ifdef ESP32
 #include <HTTPClient.h>
+#endif
+#ifdef ESP8266
+#include <ESP8266HTTPClient.h>
+#endif
 
 
 void HTTPRequests::setup(String host) {

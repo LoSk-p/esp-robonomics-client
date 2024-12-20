@@ -2,7 +2,6 @@
 
 #include <Arduino_JSON.h>
 #include <Arduino.h>
-#include <WiFi.h>
 #include "requestUtils/config.h"
 
 #ifdef ROBONOMICS_USE_HTTP
