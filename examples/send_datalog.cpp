@@ -11,7 +11,6 @@
 #define WIFI_PASSWORD "WifiPassword"
 #define SENDING_DELAY 20000
 
-uint8_t robonomicsPrivateKey[32];
 uint8_t counter = 0;
 String robonomics_host = "polkadot.rpc.robonomics.network";
 uint16_t last_send_time = 0
@@ -23,12 +22,12 @@ void setup() {
     WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
     while ( WiFi.status() != WL_CONNECTED ) {
         vTaskDelay(500 /portTICK_PERIOD_MS);
-        ESP_LOGI(TAG, "." );
+        Serial.print("." );
     }
-    Ed25519::generatePrivateKey(robonomicsPrivateKey);
-    robonomics.setPrivateKey(robonomicsPrivateKey);
+    robonomics.generateAndSetPrivateKey();
     robonomics.setup(robonomics_host);
-    Serial.printf("Robonomics address: %s\r\n", robonomics.getSs58Address().c_str());
+    Serial.printf("Robonomics address: %s\r\n", robonomics.getSs58Address());
+    Serial.printf("Robonomics private key: %s\r\n", robonomics.getPrivateKey());
 }
 
 void loop() {
