@@ -56,7 +56,7 @@ const char* Robonomics::sendCustomCall() {
     return res;
 }
 
-const char* Robonomics::sendDatalogRecord(std::string data) {
+const char* Robonomics::sendDatalogRecord(const std::string& data) {
     Data head_dr_  = Data{0x33,0};
     Data call = callDatalogRecord(head_dr_, data);
 
@@ -64,7 +64,7 @@ const char* Robonomics::sendDatalogRecord(std::string data) {
     return res;
 }
 
-const char* Robonomics::sendRWSDatalogRecord(std::string data, const char *owner_address) {
+const char* Robonomics::sendRWSDatalogRecord(const std::string& data, const char *owner_address) {
     Data head_dr_ = Data{0x33,0};
     Data head_rws_ = Data{0x37,0};
     Data call_nested = callDatalogRecord(head_dr_, data);
@@ -101,36 +101,36 @@ Data Robonomics::createCall() {
     std::vector<uint8_t> callStr = hex2bytes(CALL_ENCODED);
     append(call, callStr);
     Serial.printf("Call size: %zu\r\n", call.size());
-    for (int k = 0; k < call.size(); k++) 
-        printf("%02x", call[k]);
-    printf("\r\n");
+    // for (int k = 0; k < call.size(); k++) 
+    //     printf("%02x", call[k]);
+    // printf("\r\n");
     return call;
 }
 
 Data Robonomics::createPayload(Data call, uint32_t era, uint64_t nonce, uint64_t tip, uint32_t sv, uint32_t tv, std::string gen, std::string block) {
     Data data_ = doPayload (call, era, nonce, tip, sv, tv, gen, block);
     Serial.printf("Payload size: %zu\r\n", data_.size());
-    for (int k = 0; k < data_.size(); k++) 
-        printf("%02x", data_[k]);
-    printf("\r\n");
+    // for (int k = 0; k < data_.size(); k++) 
+    //     printf("%02x", data_[k]);
+    // printf("\r\n");
     return data_;
 }
 
 Data Robonomics::createSignature(Data data, uint8_t privateKey[32], uint8_t publicKey[32]) {
     Data signature_ = doSign (data, privateKey, publicKey);
     Serial.printf("Signature size: %zu\r\n", signature_.size());
-    for (int k = 0; k < signature_.size(); k++) 
-        printf("%02x", signature_[k]);
-    printf("\r\n");
+    // for (int k = 0; k < signature_.size(); k++) 
+    //     printf("%02x", signature_[k]);
+    // printf("\r\n");
     return signature_;
 }
 
 Data Robonomics::createSignedExtrinsic(Data signature, Data pubKey, uint32_t era, uint64_t nonce, uint64_t tip, Data call) {
     Data edata_ = doEncode (signature, pubKey, era, nonce, tip, call);
     Serial.printf("Extrinsic %s: size %zu\r\n", "Datalog", edata_.size());
-    for (int k = 0; k < edata_.size(); k++) 
-        printf("%02x", edata_[k]);
-    printf("\r\n");
+    // for (int k = 0; k < edata_.size(); k++) 
+    //     printf("%02x", edata_[k]);
+    // printf("\r\n");
     return edata_;
 }
 
