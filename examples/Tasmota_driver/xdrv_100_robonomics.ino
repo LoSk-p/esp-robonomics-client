@@ -36,7 +36,7 @@ uint8_t robonomicsPublicKey[32];
 std::string robonomicsSs58Address;
 // std::string robonomics_url = "polkadot.rpc.robonomics.network";
 String robonomics_host;
-bool use_rws = false;
+bool use_rws = true;
 bool owner_is_set = false;
 char rws_owner[50];
 
@@ -351,7 +351,7 @@ void RobonomicsInit()
   char endpoint[80];
   if (!loadString(ENDPOINT_STORAGE_KEY, endpoint, sizeof(endpoint))) {
     AddLog(LOG_LEVEL_INFO, PSTR("No endpoint parameter in flash"));
-    robonomics_host = "kusama.rpc.robonomics.network";
+    robonomics_host = "polkadot.rpc.robonomics.network";
   } else {
     robonomics_host = String(endpoint);
   }
