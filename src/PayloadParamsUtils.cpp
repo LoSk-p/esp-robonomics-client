@@ -22,6 +22,10 @@ std::string getGenesisBlockHash(BlockchainUtils *blockchainUtils) {
 }
 
 uint32_t getSpecVersion(JSONVar *runtimeInfo) {
+    if (runtimeInfo == nullptr) {
+        ESP_LOGE("getSpecVersion", "runtimeInfo is NULL");
+        return 34; // Return a default value or handle error
+    }
     int specVersion_ = (int) (runtimeInfo->operator[]("specVersion"));
     return (uint32_t) specVersion_;
 }
@@ -38,8 +42,7 @@ uint64_t getNonce(BlockchainUtils *blockchainUtils, char *ss58Address) {
     String message = blockchainUtils->createWebsocketMessage("system_accountNextIndex", paramsArray);
     JSONVar response = blockchainUtils->rpcRequest(message);
     int received_nonce = (int) (response["result"]);
-    Serial.print("Nonce: ");
-    Serial.println(received_nonce);
+    logMessage("Nonce: %d", received_nonce);
     return (uint64_t) (received_nonce);
 }
 
@@ -49,24 +52,27 @@ const char* getBlockHash(BlockchainUtils *blockchainUtils, int block_number) {
     paramsArray[0] = block_number;
     String message = blockchainUtils->createWebsocketMessage("chain_getBlockHash", paramsArray);
     JSONVar response = blockchainUtils->rpcRequest(message);
-    Serial.print("Block 0 hash: ");
-    Serial.println(response["result"]);
-    return (const char*) response["result"];
+    const char* genesis_hash = (const char*) response["result"];
+    logMessage("Block 0 hash: %s", genesis_hash);
+    return strdup(genesis_hash);
 }
 
 // Get Runtime Info
 
-JSONVar getRuntimeInfo(BlockchainUtils *blockchainUtils) {
+void getRuntimeInfo(BlockchainUtils *blockchainUtils, uint32_t *payloadSpecVersion, uint32_t *payloadTransactionVersion) {
     const char* chain_head_local = getChainHead(blockchainUtils);
     const char* parent_block_local = getParentBlockHash(chain_head_local, blockchainUtils);
-    return getRuntimeInfo(parent_block_local, blockchainUtils);
+    getRuntimeInfo(parent_block_local, blockchainUtils, payloadSpecVersion, payloadTransactionVersion);
 }
 
-JSONVar getRuntimeInfo(const char* parentBlockHash, BlockchainUtils *blockchainUtils) {
+void getRuntimeInfo(const char* parentBlockHash, BlockchainUtils *blockchainUtils, uint32_t *payloadSpecVersion, uint32_t *payloadTransactionVersion) {
     paramsArray[0] = parentBlockHash;
     String message = blockchainUtils->createWebsocketMessage("state_getRuntimeVersion", paramsArray);
     JSONVar response = blockchainUtils->rpcRequest(message);
-    return response["result"];
+    int specVersion_ = (int) response["result"]["specVersion"];
+    *payloadSpecVersion = (uint32_t) specVersion_;
+    int transactionVersion_ = (int) response["result"]["transactionVersion"];
+    *payloadTransactionVersion = (uint32_t) transactionVersion_;
 }
 
 // Get Chain Head
@@ -75,8 +81,7 @@ const char* getChainHead(BlockchainUtils *blockchainUtils) {
     String message = blockchainUtils->createWebsocketMessage("chain_getHead", emptyParamsArray);
     JSONVar response = blockchainUtils->rpcRequest(message);
     const char* chain_head = (const char *) (response["result"]);
-    Serial.print("Chain head: ");
-    Serial.println(chain_head);
+    logMessage("Chain head: %s", chain_head);
     return strdup(chain_head);
 }
 
@@ -87,7 +92,6 @@ const char* getParentBlockHash(const char* chainHead, BlockchainUtils *blockchai
     String message = blockchainUtils->createWebsocketMessage("chain_getHeader", paramsArray);
     JSONVar response = blockchainUtils->rpcRequest(message);
     const char* parent_block_hash = (const char *) (response["result"]["parentHash"]);
-    Serial.print("Chain header: ");
-    Serial.println(parent_block_hash);
+    logMessage("Chain header: %s", parent_block_hash);
     return strdup(parent_block_hash);
 }

@@ -1,4 +1,5 @@
 #include "Utils.h"
+#include <Arduino.h>
 #ifdef ESP8266
 #include <cstdlib>
 #include <cstdio>
@@ -55,4 +56,23 @@ std::string getBlockHash (bool is_remote) {
       return "631ccc82a078481584041656af292834e1ae6daab61d2875b4dd0c14bb9b17bc";
     else 
       return "60ac92592dd51574a8bfa8094deae863f2e2ffe86889bef466d9768c625467ed";
+}
+
+void logMessage(const char* format, ...) {
+#ifdef ESP_PLATFORM  // Defined in ESP-IDF
+    char buffer[2048]; // Adjust buffer size as needed
+    va_list args;
+    va_start(args, format);
+    vsnprintf(buffer, sizeof(buffer), format, args); // Format the message into the buffer
+    va_end(args);
+
+    ESP_LOGI("Robonomics", "%s", buffer); // Use the formatted message
+#else // Assuming Arduino environment
+    char buffer[2048]; // Adjust buffer size as needed
+    va_list args;
+    va_start(args, format);
+    vsnprintf(buffer, sizeof(buffer), format, args);
+    va_end(args);
+    Serial.println(buffer);
+#endif
 }

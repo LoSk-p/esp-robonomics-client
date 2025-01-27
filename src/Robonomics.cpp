@@ -26,9 +26,9 @@ void Robonomics::setPrivateKey(uint8_t *privateKey) {
         strncpy(ss58Address, tempAddress, SS58_ADDRESS_SIZE); // Leave space for null terminator
         ss58Address[SS58_ADDRESS_SIZE] = '\0'; // Ensure null termination
         delete[] tempAddress;
-        Serial.printf("Robonomics Address: %s\r\n", ss58Address);
+        logMessage("Robonomics Address: %s\r\n", ss58Address);
     } else {
-        Serial.println("Failed to get address from public key.");
+        logMessage("Failed to get address from public key.");
     }
 }
 
@@ -61,18 +61,18 @@ const char* Robonomics::sendDatalogRecord(const std::string& data) {
     Data call = callDatalogRecord(head_dr_, data);
 
     const char* res = createAndSendExtrinsic(call);
-    return res;
+    return strdup(res);
 }
 
-const char* Robonomics::sendRWSDatalogRecord(const std::string& data, const char *owner_address) {
+const char* Robonomics::sendRWSDatalogRecord(std::string data, const char *owner_address) {
+    logMessage("Sending RWS datalog: %s, owner: %s", data.c_str(), owner_address);
     Data head_dr_ = Data{0x33,0};
     Data head_rws_ = Data{0x37,0};
     Data call_nested = callDatalogRecord(head_dr_, data);
     RobonomicsPublicKey ownerKey = getPublicKeyFromAddr(owner_address);
     Data call = callRws(head_rws_, ownerKey, call_nested);
-
     const char* res = createAndSendExtrinsic(call);
-    return res;
+    return strdup(res);
 }
 
 const char* Robonomics::createAndSendExtrinsic(Data call) {
@@ -83,9 +83,11 @@ const char* Robonomics::createAndSendExtrinsic(Data call) {
     payloadBlockHash.erase(0, 2);
     uint32_t payloadEra = getEra();
     uint64_t payloadTip = getTip();
-    JSONVar runtimeInfo = getRuntimeInfo(& blockchainUtils);
-    uint32_t payloadSpecVersion = getSpecVersion(& runtimeInfo);
-    uint32_t payloadTransactionVersion = getTransactionVersion(& runtimeInfo);
+    uint32_t payloadSpecVersion;
+    uint32_t payloadTransactionVersion;
+    getRuntimeInfo(& blockchainUtils, &payloadSpecVersion, &payloadTransactionVersion);
+    // uint32_t payloadSpecVersion = getSpecVersion(& runtimeInfo);
+    // uint32_t payloadTransactionVersion = getTransactionVersion(& runtimeInfo);
     // Serial.printf("Spec version: %" PRIu32 ", tx version: %" PRIu32 ", nonce: %llu, era: %" PRIu32 ", tip: %llu\r\n", payloadSpecVersion, payloadTransactionVersion, (unsigned long long)payloadNonce, payloadEra, (unsigned long long)payloadTip);
     Data data_ = createPayload(call, payloadEra, payloadNonce, payloadTip, payloadSpecVersion, payloadTransactionVersion, payloadBlockHash, payloadBlockHash);
     Data signature_ = createSignature(data_, privateKey_, publicKey_);
@@ -93,14 +95,14 @@ const char* Robonomics::createAndSendExtrinsic(Data call) {
     Data edata_ = createSignedExtrinsic(signature_, pubKey, payloadEra, payloadNonce, payloadTip, call);
     int requestId = blockchainUtils.getRequestId();
     const char* res = sendExtrinsic(edata_, requestId);
-    return res;
+    return strdup(res);
 }
 
 Data Robonomics::createCall() {
     Data call;
     std::vector<uint8_t> callStr = hex2bytes(CALL_ENCODED);
     append(call, callStr);
-    Serial.printf("Call size: %zu\r\n", call.size());
+    logMessage("Call size: %zu\r\n", call.size());
     // for (int k = 0; k < call.size(); k++) 
     //     printf("%02x", call[k]);
     // printf("\r\n");
@@ -109,7 +111,7 @@ Data Robonomics::createCall() {
 
 Data Robonomics::createPayload(Data call, uint32_t era, uint64_t nonce, uint64_t tip, uint32_t sv, uint32_t tv, std::string gen, std::string block) {
     Data data_ = doPayload (call, era, nonce, tip, sv, tv, gen, block);
-    Serial.printf("Payload size: %zu\r\n", data_.size());
+    logMessage("Payload size: %zu\r\n", data_.size());
     // for (int k = 0; k < data_.size(); k++) 
     //     printf("%02x", data_[k]);
     // printf("\r\n");
@@ -118,7 +120,7 @@ Data Robonomics::createPayload(Data call, uint32_t era, uint64_t nonce, uint64_t
 
 Data Robonomics::createSignature(Data data, uint8_t privateKey[32], uint8_t publicKey[32]) {
     Data signature_ = doSign (data, privateKey, publicKey);
-    Serial.printf("Signature size: %zu\r\n", signature_.size());
+    logMessage("Signature size: %zu\r\n", signature_.size());
     // for (int k = 0; k < signature_.size(); k++) 
     //     printf("%02x", signature_[k]);
     // printf("\r\n");
@@ -127,7 +129,7 @@ Data Robonomics::createSignature(Data data, uint8_t privateKey[32], uint8_t publ
 
 Data Robonomics::createSignedExtrinsic(Data signature, Data pubKey, uint32_t era, uint64_t nonce, uint64_t tip, Data call) {
     Data edata_ = doEncode (signature, pubKey, era, nonce, tip, call);
-    Serial.printf("Extrinsic %s: size %zu\r\n", "Datalog", edata_.size());
+    logMessage("Extrinsic %s: size %zu\r\n", "Datalog", edata_.size());
     // for (int k = 0; k < edata_.size(); k++) 
     //     printf("%02x", edata_[k]);
     // printf("\r\n");
@@ -136,15 +138,15 @@ Data Robonomics::createSignedExtrinsic(Data signature, Data pubKey, uint32_t era
 
 const char* Robonomics::sendExtrinsic(Data extrinsicData, int requestId) {
     String extrinsicMessage = fillParamsJs(extrinsicData, requestId);
-    Serial.printf("After to string: %s\r\n", extrinsicMessage.c_str());
+    logMessage("After to string: %s\r\n", extrinsicMessage.c_str());
     // Serial.print(extrinsicMessage);
     JSONVar result = blockchainUtils.rpcRequest(extrinsicMessage);
     String extrinsicResult;
     if (result.hasOwnProperty("result")) {
-        extrinsicResult = JSON.stringify(result["result"]);
+        extrinsicResult = result["result"];
     } else {
         extrinsicResult = JSON.stringify(result["error"]);
     }
-    Serial.printf("Extrinsic result: %s", extrinsicResult.c_str());
-    return extrinsicResult.c_str();
+    logMessage("Extrinsic result: %s", extrinsicResult.c_str());
+    return strdup(extrinsicResult.c_str());
 }

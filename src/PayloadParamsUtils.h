@@ -11,8 +11,8 @@ uint32_t getTransactionVersion(JSONVar *runtimeInfo);
 
 uint64_t getNonce(BlockchainUtils *blockchainUtils, char *ss58Address);
 const char* getBlockHash(BlockchainUtils *blockchainUtils, int block_number);
-JSONVar getRuntimeInfo(BlockchainUtils *blockchainUtils);
-JSONVar getRuntimeInfo(const char* parentBlockHash, BlockchainUtils *blockchainUtils);
+void getRuntimeInfo(const char* parentBlockHash, BlockchainUtils *blockchainUtils, uint32_t *payloadSpecVersion, uint32_t *payloadTransactionVersion);
+void getRuntimeInfo(BlockchainUtils *blockchainUtils, uint32_t *payloadSpecVersion, uint32_t *payloadTransactionVersion);
 const char* getChainHead(BlockchainUtils *blockchainUtils);
 const char* getParentBlockHash(const char* chainHead, BlockchainUtils *blockchainUtils);
 

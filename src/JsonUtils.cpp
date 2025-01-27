@@ -49,13 +49,13 @@ FromJson parseJson (JSONVar val) {
    fj.bhash = "";
 
 // #ifdef DEBUG_PRINT
-   Serial.printf("nonce encoded & swapped: 0x%llx", (unsigned long long)fj.nonce); // For uint64_t
-   Serial.printf("specVersion: %" PRIu32, fj.specVersion); // For uint32_t
-   Serial.printf("tip: %llu", (unsigned long long)fj.tip); // For uint64_t
-   Serial.printf("era: %" PRIu32, fj.era); // For uint32_t
-   Serial.printf("tx_version: %" PRIu32, fj.tx_version); // For uint32_t
-   Serial.printf("genesis hash: %s", fj.ghash.c_str()); // For std::string
-   Serial.printf("block hash: %s", fj.bhash.c_str()); // For std::string
+   logMessage("nonce encoded & swapped: 0x%llx", (unsigned long long)fj.nonce); // For uint64_t
+   logMessage("specVersion: %" PRIu32, fj.specVersion); // For uint32_t
+   logMessage("tip: %llu", (unsigned long long)fj.tip); // For uint64_t
+   logMessage("era: %" PRIu32, fj.era); // For uint32_t
+   logMessage("tx_version: %" PRIu32, fj.tx_version); // For uint32_t
+   logMessage("genesis hash: %s", fj.ghash.c_str()); // For std::string
+   logMessage("block hash: %s", fj.bhash.c_str()); // For std::string
 // #endif
 
    return fj;

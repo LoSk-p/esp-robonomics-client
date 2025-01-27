@@ -11,3 +11,4 @@ bool getTypeUrl(std::string url);
 std::string getBlockHash (bool is_remote);
 void hex2bytes(const char* hex, uint8_t privateKey_[KEYS_SIZE]);
 void bytes2hex(const uint8_t* bytes, size_t length, char* hexString);
+void logMessage(const char* format, ...);

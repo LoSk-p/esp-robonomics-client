@@ -27,7 +27,7 @@ public:
     void setPrivateKey(uint8_t *privateKey);
     void setPrivateKey(const char* hexPrivateKey);
     const char* sendDatalogRecord(const std::string& data);
-    const char* sendRWSDatalogRecord(const std::string& data, const char *owner_address);
+    const char* sendRWSDatalogRecord(std::string data, const char *owner_address);
     const char* sendCustomCall();
     const char* getSs58Address() const;
     const char* getPrivateKey() const;

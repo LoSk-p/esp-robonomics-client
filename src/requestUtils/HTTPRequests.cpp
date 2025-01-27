@@ -1,4 +1,5 @@
 #include "config.h"
+#include "../Utils.h"
 
 #ifdef ROBONOMICS_USE_HTTP
 
@@ -19,26 +20,25 @@ void HTTPRequests::setup(String host) {
 void HTTPRequests::disconnect() {}
 
 JSONVar HTTPRequests::sendRequest(String message) {
-    Serial.print("[HTTP]+POST:\n"); 
+    logMessage("[HTTP]+POST:\n"); 
     JSONVar response;
     HTTPClient http;
     http.begin(wifi_client, node_url.c_str());
     http.addHeader("Content-Type", "application/json");
     uint32_t httpCode = (uint32_t)http.POST(message);
-    Serial.println("sent:");
-    Serial.println(message);
+    logMessage("sent: %s", message.c_str());
     if (httpCode > 0) {
-        Serial.printf("[HTTP]+POST code: %d\n", httpCode);
+        logMessage("[HTTP]+POST code: %ld\n", httpCode);
         if (httpCode == HTTP_CODE_OK) {
             const String& payload = http.getString();
-            Serial.println("received:");
-            Serial.println(payload);
+            logMessage("received:");
+            logMessage(payload.c_str());
             response = JSON.parse(payload);
         } else {
-            Serial.println("HTTP response is not 200");
+            logMessage("HTTP response is not 200");
         }
     } else {
-        Serial.println("HTTP response is 0");
+        logMessage("HTTP response is 0");
     }
     return response;
 }
