@@ -31,4 +31,5 @@ public:
     const char* sendCustomCall();
     const char* getSs58Address() const;
     const char* getPrivateKey() const;
+    void signMessage(const String &message, String &signature);
 };

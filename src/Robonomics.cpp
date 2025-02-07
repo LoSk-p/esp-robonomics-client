@@ -2,6 +2,7 @@
 #include <inttypes.h>
 #include "address.h"
 #include <Arduino.h>
+#include <Ed25519.h>
 
 static const char *TAG = "ROBONOMICS";
 
@@ -19,8 +20,15 @@ void Robonomics::generateAndSetPrivateKey() {
     setPrivateKey(robonomicsPrivateKey);
 }
 
+void Robonomics::setPrivateKey(const char* hexPrivateKey) {
+    uint8_t privateKey[KEYS_SIZE];
+    hex2bytes(hexPrivateKey, privateKey);
+    setPrivateKey(privateKey);
+}
+
 void Robonomics::setPrivateKey(uint8_t *privateKey) {
     memcpy(privateKey_, privateKey, KEYS_SIZE);
+    Ed25519::derivePublicKey(publicKey_, privateKey_);
     char* tempAddress = getAddrFromPrivateKey(privateKey_, ROBONOMICS_PREFIX);
     if (tempAddress != nullptr) {
         strncpy(ss58Address, tempAddress, SS58_ADDRESS_SIZE); // Leave space for null terminator
@@ -30,12 +38,6 @@ void Robonomics::setPrivateKey(uint8_t *privateKey) {
     } else {
         Serial.println("Failed to get address from public key.");
     }
-}
-
-void Robonomics::setPrivateKey(const char* hexPrivateKey) {
-    uint8_t privateKey[KEYS_SIZE];
-    hex2bytes(hexPrivateKey, privateKey);
-    setPrivateKey(privateKey);
 }
 
 const char* Robonomics::getPrivateKey() const {
@@ -76,16 +78,18 @@ const char* Robonomics::sendRWSDatalogRecord(const std::string& data, const char
 }
 
 const char* Robonomics::createAndSendExtrinsic(Data call) {
-    Ed25519::derivePublicKey(publicKey_, privateKey_);
+    const char* error_res = "error";
 
-    uint64_t payloadNonce = getNonce(& blockchainUtils, ss58Address);
-    std::string payloadBlockHash = getGenesisBlockHash(& blockchainUtils);
+    uint64_t payloadNonce;
+    if (!getNonce(& blockchainUtils, ss58Address, &payloadNonce)) return error_res;
+    std::string payloadBlockHash;
+    if (!getGenesisBlockHash(& blockchainUtils, &payloadBlockHash)) return error_res;
     payloadBlockHash.erase(0, 2);
     uint32_t payloadEra = getEra();
     uint64_t payloadTip = getTip();
-    JSONVar runtimeInfo = getRuntimeInfo(& blockchainUtils);
-    uint32_t payloadSpecVersion = getSpecVersion(& runtimeInfo);
-    uint32_t payloadTransactionVersion = getTransactionVersion(& runtimeInfo);
+    uint32_t payloadSpecVersion;
+    uint32_t payloadTransactionVersion;
+    if (!extractRuntimeVersions(& blockchainUtils, & payloadSpecVersion, & payloadTransactionVersion)) return error_res;
     // Serial.printf("Spec version: %" PRIu32 ", tx version: %" PRIu32 ", nonce: %llu, era: %" PRIu32 ", tip: %llu\r\n", payloadSpecVersion, payloadTransactionVersion, (unsigned long long)payloadNonce, payloadEra, (unsigned long long)payloadTip);
     Data data_ = createPayload(call, payloadEra, payloadNonce, payloadTip, payloadSpecVersion, payloadTransactionVersion, payloadBlockHash, payloadBlockHash);
     Data signature_ = createSignature(data_, privateKey_, publicKey_);
@@ -94,6 +98,24 @@ const char* Robonomics::createAndSendExtrinsic(Data call) {
     int requestId = blockchainUtils.getRequestId();
     const char* res = sendExtrinsic(edata_, requestId);
     return res;
+}
+
+void Robonomics::signMessage(const String &message, String &signature) {
+    std::string msgStr = std::string(message.c_str());
+    // std::string msgStr(message.c_str());
+    Data msgData = data(msgStr);
+    Data sigData = createSignature(msgData, privateKey_, publicKey_);
+    for (int k = 0; k < sigData.size(); k++) 
+        printf("%02x", sigData[k]);
+    printf("\r\n");
+    String sigHex = "";
+    for (size_t i = 0; i < sigData.size(); i++) {
+        if (sigData[i] < 0x10) {
+            sigHex += "0"; // pad with a zero if needed
+        }
+        sigHex += String(sigData[i], HEX);
+    }
+    signature = sigHex;
 }
 
 Data Robonomics::createCall() {

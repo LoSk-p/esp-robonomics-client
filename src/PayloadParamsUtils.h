@@ -5,14 +5,13 @@
 
 uint32_t getEra();
 uint64_t getTip();
-std::string getGenesisBlockHash(BlockchainUtils *blockchainUtils);
-uint32_t getSpecVersion(JSONVar *runtimeInfo);
-uint32_t getTransactionVersion(JSONVar *runtimeInfo);
+bool getGenesisBlockHash(BlockchainUtils *blockchainUtils, std::string *blockHash);
 
-uint64_t getNonce(BlockchainUtils *blockchainUtils, char *ss58Address);
-const char* getBlockHash(BlockchainUtils *blockchainUtils, int block_number);
-JSONVar getRuntimeInfo(BlockchainUtils *blockchainUtils);
-JSONVar getRuntimeInfo(const char* parentBlockHash, BlockchainUtils *blockchainUtils);
-const char* getChainHead(BlockchainUtils *blockchainUtils);
-const char* getParentBlockHash(const char* chainHead, BlockchainUtils *blockchainUtils);
+bool getNonce(BlockchainUtils *blockchainUtils, char *ss58Address, uint64_t *payloadNonce);
+bool getBlockHash(BlockchainUtils *blockchainUtils, int block_number, std::string *blockHash);
+bool extractRuntimeVersions(BlockchainUtils *blockchainUtils, uint32_t *specVersion, uint32_t *transactionVersion);
+bool getRuntimeInfo(BlockchainUtils *blockchainUtils, JSONVar *runtimeInfo);
+bool getRuntimeInfo(const std::string &parentBlockHash, BlockchainUtils *blockchainUtils, JSONVar *runtimeInfo);
+bool getChainHead(BlockchainUtils *blockchainUtils, std::string *chainHead);
+bool getParentBlockHash(const std::string &chainHead, BlockchainUtils *blockchainUtils, std::string *parentBlockHash);
 

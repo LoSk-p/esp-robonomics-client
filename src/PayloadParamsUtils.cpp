@@ -13,81 +13,116 @@ uint64_t getTip() {
     return 0;
 }
 
-std::string getGenesisBlockHash(BlockchainUtils *blockchainUtils) {
+bool getGenesisBlockHash(BlockchainUtils *blockchainUtils, std::string *blockHash) {
     // return "525639f713f397dcf839bd022cd821f367ebcf179de7b9253531f8adbe5436d6"; // Vara
     // return "631ccc82a078481584041656af292834e1ae6daab61d2875b4dd0c14bb9b17bc"; // Robonomics
-    const char* res = getBlockHash(blockchainUtils, 0);
-    std::string res_str(res);
-    return res_str;
-}
-
-uint32_t getSpecVersion(JSONVar *runtimeInfo) {
-    int specVersion_ = (int) (runtimeInfo->operator[]("specVersion"));
-    return (uint32_t) specVersion_;
-}
-
-uint32_t getTransactionVersion(JSONVar *runtimeInfo) {
-    int tx_version_ = (int)(runtimeInfo->operator[]("transactionVersion"));
-    return (uint32_t) tx_version_;
+    return getBlockHash(blockchainUtils, 0, blockHash);
 }
 
 // Get Nonce
 
-uint64_t getNonce(BlockchainUtils *blockchainUtils, char *ss58Address) {
+bool getNonce(BlockchainUtils *blockchainUtils, char *ss58Address, uint64_t *payloadNonce) {
     paramsArray[0] = ss58Address;
     String message = blockchainUtils->createWebsocketMessage("system_accountNextIndex", paramsArray);
     JSONVar response = blockchainUtils->rpcRequest(message);
+    if (response.hasOwnProperty("error") || !response.hasOwnProperty("result")) {
+        return false;
+    }
     int received_nonce = (int) (response["result"]);
     Serial.print("Nonce: ");
     Serial.println(received_nonce);
-    return (uint64_t) (received_nonce);
+    *payloadNonce = static_cast<uint64_t>(received_nonce);
+    return true;
 }
 
 // Get Block Hash
 
-const char* getBlockHash(BlockchainUtils *blockchainUtils, int block_number) {
+bool getBlockHash(BlockchainUtils *blockchainUtils, int block_number, std::string *blockHash) {
     paramsArray[0] = block_number;
     String message = blockchainUtils->createWebsocketMessage("chain_getBlockHash", paramsArray);
     JSONVar response = blockchainUtils->rpcRequest(message);
-    Serial.print("Block 0 hash: ");
+    if (response.hasOwnProperty("error") || !response.hasOwnProperty("result")) {
+        return false;
+    }
+    Serial.print("Block ");
+    Serial.print(block_number);
+    Serial.print(" hash: ");
     Serial.println(response["result"]);
-    return (const char*) response["result"];
+
+    *blockHash = std::string((const char*) response["result"]);
+    return true;
 }
 
 // Get Runtime Info
 
-JSONVar getRuntimeInfo(BlockchainUtils *blockchainUtils) {
-    const char* chain_head_local = getChainHead(blockchainUtils);
-    const char* parent_block_local = getParentBlockHash(chain_head_local, blockchainUtils);
-    return getRuntimeInfo(parent_block_local, blockchainUtils);
+bool extractRuntimeVersions(BlockchainUtils *blockchainUtils, uint32_t *specVersion, uint32_t *transactionVersion) {
+    JSONVar runtimeInfo;
+    if (!getRuntimeInfo(blockchainUtils, &runtimeInfo)) return false;
+    if (runtimeInfo.hasOwnProperty("specVersion") && runtimeInfo.hasOwnProperty("transactionVersion")) {
+        *specVersion = static_cast<uint32_t>((int)runtimeInfo["specVersion"]);
+        *transactionVersion = static_cast<uint32_t>((int)runtimeInfo["transactionVersion"]);
+        return true;
+    }
+    return false;
 }
 
-JSONVar getRuntimeInfo(const char* parentBlockHash, BlockchainUtils *blockchainUtils) {
-    paramsArray[0] = parentBlockHash;
+bool getRuntimeInfo(BlockchainUtils *blockchainUtils, JSONVar *runtimeInfo) {
+    std::string chainHead;
+    if (!getChainHead(blockchainUtils, &chainHead)) {
+        return false;
+    }
+    std::string parentBlockHash;
+    if (!getParentBlockHash(chainHead, blockchainUtils, &parentBlockHash)) {
+        return false;
+    }
+    return getRuntimeInfo(parentBlockHash, blockchainUtils, runtimeInfo);
+}
+
+bool getRuntimeInfo(const std::string &parentBlockHash, BlockchainUtils *blockchainUtils, JSONVar *runtimeInfo) {
+    paramsArray[0] = parentBlockHash.c_str();
     String message = blockchainUtils->createWebsocketMessage("state_getRuntimeVersion", paramsArray);
     JSONVar response = blockchainUtils->rpcRequest(message);
-    return response["result"];
+    if (response.hasOwnProperty("error") || !response.hasOwnProperty("result")) {
+        Serial.println("Error: state_getRuntimeVersion failed");
+        return false;
+    }
+    *runtimeInfo = response["result"];
+    return true;
 }
 
 // Get Chain Head
 
-const char* getChainHead(BlockchainUtils *blockchainUtils) {
+bool getChainHead(BlockchainUtils *blockchainUtils, std::string *chainHead) {
     String message = blockchainUtils->createWebsocketMessage("chain_getHead", emptyParamsArray);
     JSONVar response = blockchainUtils->rpcRequest(message);
-    const char* chain_head = (const char *) (response["result"]);
+
+    if (response.hasOwnProperty("error") || !response.hasOwnProperty("result")) {
+        Serial.println("Error: chain_getHead failed");
+        return false;
+    }
+    const char* head = (const char*)(response["result"]);
     Serial.print("Chain head: ");
-    Serial.println(chain_head);
-    return strdup(chain_head);
+    Serial.println(head);
+    *chainHead = std::string(head);
+    return true;
 }
 
 // Get Parent Block Hash
 
-const char* getParentBlockHash(const char* chainHead, BlockchainUtils *blockchainUtils) {
-    paramsArray[0] = chainHead;
+bool getParentBlockHash(const std::string &chainHead, BlockchainUtils *blockchainUtils, std::string *parentBlockHash) {
+    paramsArray[0] = chainHead.c_str();
     String message = blockchainUtils->createWebsocketMessage("chain_getHeader", paramsArray);
     JSONVar response = blockchainUtils->rpcRequest(message);
-    const char* parent_block_hash = (const char *) (response["result"]["parentHash"]);
-    Serial.print("Chain header: ");
-    Serial.println(parent_block_hash);
-    return strdup(parent_block_hash);
+
+    if (response.hasOwnProperty("error") ||
+        !response.hasOwnProperty("result") ||
+        !response["result"].hasOwnProperty("parentHash")) {
+        Serial.println("Error: chain_getHeader failed");
+        return false;
+    }
+    const char* parent_hash = (const char*)(response["result"]["parentHash"]);
+    Serial.print("Parent block hash: ");
+    Serial.println(parent_hash);
+    *parentBlockHash = std::string(parent_hash);
+    return true;
 }

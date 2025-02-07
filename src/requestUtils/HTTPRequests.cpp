@@ -36,9 +36,11 @@ JSONVar HTTPRequests::sendRequest(String message) {
             response = JSON.parse(payload);
         } else {
             Serial.println("HTTP response is not 200");
+            response["error"] = httpCode;
         }
     } else {
         Serial.println("HTTP response is 0");
+        response["error"] = httpCode;
     }
     return response;
 }
