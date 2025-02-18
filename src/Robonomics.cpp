@@ -103,7 +103,7 @@ const char* Robonomics::createAndSendExtrinsic(Data call) {
 void Robonomics::signMessage(const String &message, String &signature) {
     std::string msgStr = std::string(message.c_str());
     // std::string msgStr(message.c_str());
-    Data msgData = data(msgStr);
+    Data msgData(msgStr.begin(), msgStr.end());
     Data sigData = createSignature(msgData, privateKey_, publicKey_);
     for (int k = 0; k < sigData.size(); k++) 
         printf("%02x", sigData[k]);
